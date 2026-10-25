@@ -1,3 +1,11 @@
+## 0.5.0 development preview
+
+- Added MCP proposal-only `propose_comment` and `propose_edit`.
+- Added in-Novalist AI Bridge Review panel for author approval/rejection.
+- Added saved text/hash, project/book/draft identity, and unsaved-editor guards.
+- Suggested edit approval requires a recovery snapshot; no remote MCP approval tool.
+- Queue is in-memory and clears on restart. Native integration testing pending.
+
 ## v0.4.0 (development preview)
 
 - Added paginated scene excerpts with stable content fingerprints and metadata/statistics endpoints.
