@@ -8,18 +8,19 @@ namespace Novalist.AiBridge;
 public sealed class AiBridgeExtension : IExtension, IWebViewContributor
 {
     private McpHttpServer? _server;
+    private ProjectGateway? _gateway;
 
     public string Id => "com.whscott.novalist-ai-bridge";
     public string DisplayName => "Novalist AI Bridge";
-    public string Description => "Read-only manuscript tools for local MCP clients.";
-    public string Version => "0.4.0";
+    public string Description => "Manuscript MCP tools with author-approved editorial proposals.";
+    public string Version => "0.5.0";
     public string Author => "W.H. Scott";
 
     public void Initialize(IHostServices host)
     {
         try
         {
-            _server = new McpHttpServer(new ProjectGateway(host), host.GetExtensionSettingsPath(Id));
+            _server = new McpHttpServer(_gateway = new ProjectGateway(host), host.GetExtensionSettingsPath(Id));
             _server.Start();
             host.ShowNotification("Novalist AI Bridge: local MCP endpoint started on port 8765.");
         }
@@ -34,7 +35,9 @@ public sealed class AiBridgeExtension : IExtension, IWebViewContributor
 
     // The host only creates this controller for our own view.
     public IWebViewController? CreateController(string viewKey) =>
-        viewKey == "com.whscott.novalist-ai-bridge.settings"
+        viewKey == "com.whscott.novalist-ai-bridge.review" && _gateway is not null
+            ? new ReviewWebViewController(_gateway)
+            : viewKey == "com.whscott.novalist-ai-bridge.settings"
             ? new SettingsWebViewController(() => _server?.GetBearerValue())
             : null;
 
