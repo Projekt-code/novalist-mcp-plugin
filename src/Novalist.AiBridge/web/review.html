@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>AI Bridge editorial review</title>
+<style>body{font:15px system-ui;padding:24px;background:var(--nl-surface-card,#fff);color:var(--nl-text,#222)}button{margin:5px;padding:9px}article{border:1px solid #999;border-radius:8px;padding:12px;margin:12px 0;white-space:pre-wrap}p{line-height:1.5}.muted{opacity:.75}</style>
+</head><body><h1>AI Bridge · Editorial Review</h1>
+<p>AI clients can only queue proposals. Nothing is written until you approve it here. Suggested edits are tracked in Novalist and preceded by a snapshot. Refresh after opening another project.</p>
+<button id="refresh">Refresh pending proposals</button><p id="status" role="status"></p><section id="items"></section>
+<script>(()=>{'use strict';
+const items=document.getElementById('items'),status=document.getElementById('status');
+const send=(action,id)=>window.parent.postMessage({novalistExt:JSON.stringify({action,id})},'*');
+document.getElementById('refresh').onclick=()=>send('list');
+window.addEventListener('message',ev=>{if(ev.source!==window.parent||typeof ev.data?.novalistHost!=='string')return;
+let msg;try{msg=JSON.parse(ev.data.novalistHost)}catch{return}
+if(!msg.success){status.textContent=msg.error||'Request failed';return}
+if(msg.action!=='list'){status.textContent=msg.action+' completed';send('list');return}
+items.replaceChildren();const proposals=msg.result?.proposals||[];
+status.textContent=proposals.length+' pending proposal(s)';
+for(const p of proposals){const card=document.createElement('article');
+const h=document.createElement('h3');h.textContent=p.kind+' — '+p.chapterTitle+' / '+p.sceneTitle;card.append(h);
+const a=document.createElement('p');a.textContent='Original phrase: '+(p.anchor||'(whole scene)');card.append(a);
+const t=document.createElement('p');t.textContent='Proposed text: '+p.text;card.append(t);
+for(const action of ['approve','reject']){const b=document.createElement('button');b.textContent=action==='approve'?'Approve in Novalist':'Reject';b.onclick=()=>{if(action==='approve'&&!window.confirm('Apply this '+p.kind+' to the currently open Novalist project?'))return;send(action,p.id)};card.append(b)}
+items.append(card)}
+});
+send('list');
+})();</script></body></html>
