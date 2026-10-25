@@ -1,3 +1,9 @@
+## v0.4.0 (development preview)
+
+- Added paginated scene excerpts with stable content fingerprints and metadata/statistics endpoints.
+- Added scene-scoped, AI-filtered Codex lookup and paginated sections using Novalist's `GetAiContextAsync`.
+- Preserved existing read-only access and token management. Native runtime validation still pending.
+
 # Changelog
 
 ## v0.3.3 (2026-10-24)
