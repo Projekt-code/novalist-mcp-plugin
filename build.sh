@@ -17,6 +17,7 @@ cp src/Novalist.AiBridge/bin/Release/net10.0/Novalist.AiBridge.dll "$OUT/"
 cp src/Novalist.AiBridge/extension.json "$OUT/"
 mkdir -p "$OUT/web"
 cp src/Novalist.AiBridge/web/settings.html "$OUT/web/"
+cp src/Novalist.AiBridge/web/review.html "$OUT/web/"
 # No duplicate Novalist.Sdk.dll: the host provides SDK 15.
 rm -f "$OUT/Novalist.Sdk.dll"
 printf '\nBuilt extension folder: %s\n' "$(pwd)/$OUT"
