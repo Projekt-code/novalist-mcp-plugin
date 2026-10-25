@@ -209,8 +209,8 @@ internal sealed class McpHttpServer : IDisposable
                 {
                     protocolVersion = "2025-06-18",
                     capabilities = new { tools = new { listChanged = false } },
-                    serverInfo = new { name = "novalist-ai-bridge", version = "0.4.0" },
-                    instructions = "Read-only access to the currently open Novalist book and draft. Prefer bounded get_scene_excerpt and get_scene_stats over large get_scene responses. Use get_codex_context for scene-filtered lore. Inactive and export-excluded scenes are withheld."
+                    serverInfo = new { name = "novalist-ai-bridge", version = "0.5.0" },
+                    instructions = "Read manuscript and propose editorial comments or suggested edits for explicit approval within Novalist. MCP cannot approve or directly alter project files. Prefer bounded get_scene_excerpt and get_scene_stats over large get_scene responses. Use get_codex_context for scene-filtered lore. Inactive and export-excluded scenes are withheld."
                 };
             case "ping": return new { };
             case "tools/list": return new { tools = Tools() };
@@ -234,6 +234,8 @@ internal sealed class McpHttpServer : IDisposable
                         "get_scene_excerpt" => await _project.GetSceneExcerptAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene"), OptionalInt(args, "start", 0), OptionalInt(args, "length", 2000), Text(args, "expectedHash")),
                         "get_codex_context" => await _project.GetCodexContextAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene"), OptionalInt(args, "offset", 0), OptionalInt(args, "limit", 5)),
                         "get_codex_section" => await _project.GetCodexSectionAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene"), RequiredText(args, "entryId"), RequiredNonnegativeInt(args, "sectionIndex"), OptionalInt(args, "start", 0), OptionalInt(args, "length", 2000), Text(args, "expectedHash")),
+                        "propose_comment" => await _project.ProposeCommentAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene"), RequiredText(args, "text"), Text(args, "anchor"), RequiredText(args, "expectedHash")),
+                        "propose_edit" => await _project.ProposeEditAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene"), RequiredText(args, "replacement"), RequiredText(args, "anchor"), RequiredText(args, "expectedHash")),
                         "search_scenes" => await _project.SearchScenesAsync(RequiredText(args, "query"), OptionalInt(args, "limit", 10)),
                         _ => throw new ArgumentException("Unknown tool: " + name)
                     };
@@ -332,6 +334,27 @@ internal sealed class McpHttpServer : IDisposable
                 start = new { type = "integer", minimum = 0 }, length = new { type = "integer", minimum = 1, maximum = 4000 },
                 expectedHash = new { type = "string" } },
                 required = new[] { "chapter", "scene", "entryId", "sectionIndex" }, additionalProperties = false }
+        },
+        new
+        {
+            name = "propose_comment",
+            description = "Queue an editorial comment for the author to approve in Novalist. No write occurs now. Include the saved scene hash from get_scene_stats.",
+            inputSchema = new { type = "object", properties = new {
+                chapter = new { type = "integer", minimum = 1 }, scene = new { type = "integer", minimum = 1 },
+                text = new { type = "string", minLength = 1, maxLength = 4000 },
+                anchor = new { type = "string", maxLength = 600 }, expectedHash = new { type = "string", minLength = 64, maxLength = 64 } },
+                required = new[] { "chapter", "scene", "text", "expectedHash" }, additionalProperties = false }
+        },
+        new
+        {
+            name = "propose_edit",
+            description = "Queue a replacement phrase as a tracked suggested edit for author approval in Novalist. Does not write manuscript on call. Requires an exact unique plain HTML anchor.",
+            inputSchema = new { type = "object", properties = new {
+                chapter = new { type = "integer", minimum = 1 }, scene = new { type = "integer", minimum = 1 },
+                replacement = new { type = "string", minLength = 1, maxLength = 4000 },
+                anchor = new { type = "string", minLength = 1, maxLength = 600 },
+                expectedHash = new { type = "string", minLength = 64, maxLength = 64 } },
+                required = new[] { "chapter", "scene", "replacement", "anchor", "expectedHash" }, additionalProperties = false }
         },
         new
         {
