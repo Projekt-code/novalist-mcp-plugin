@@ -16,7 +16,7 @@ Novalist AI Bridge is a community extension, not part of Novalist's official dis
 - In-Novalist token controls: Reveal, Hide, and Copy Bearer value
 - Read-only scene metadata, statistics and paginated excerpts
 - Scene-scoped Codex entries and sections filtered through Novalist’s `GetAiContextAsync`
-- No write-back capabilities yet
+- Deliberately **read-only**: no comment proposals, editorial approval queue, suggested edits, scene writes, or Codex writes.
 
 **Data scope:** The bridge currently omits inactive and export-excluded scenes. Scene reads return saved text (unsaved editor changes may not yet be visible). Large `get_scene` results may be truncated by the bridge or the AI client.
 
@@ -58,7 +58,7 @@ Example test prompt for a tool-capable client:
 
 > Use the Novalist MCP tools to find the active book, list its chapters, then list the scenes in its first chapter. Report the returned titles and identifiers. Do not invent missing details.
 
-Avoid asking for multiple full scenes in a single tool cycle until paginated retrieval is implemented.
+Prefer `get_scene_stats` and paginated `get_scene_excerpt` over multiple full-scene reads, especially with smaller local models.
 
 ## MCP tools
 
@@ -96,7 +96,7 @@ The current extension code targets `Novalist.Sdk` v15.0.0. See the [official Nov
 
 ## Roadmap and contributing
 
-Read [ROADMAP.md](ROADMAP.md) for paginated scenes, Codex access, and safe editorial write-back. Contributions and reproducible bug reports are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
+Read [ROADMAP.md](ROADMAP.md) for retrieval, context search, and continuity-checking priorities. Manuscript changes remain entirely under the author's control in Novalist. Contributions and reproducible bug reports are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
