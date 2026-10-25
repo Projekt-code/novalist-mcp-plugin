@@ -2,7 +2,7 @@
 
 **An experimental, local MCP bridge for Novalist 3.6+**, allowing compatible AI clients—including Unsloth Studio—to discover and read the active Novalist manuscript.
 
-> **Status:** v0.4.0 development preview. Chapter and scene retrieval have been tested with a Novalist 3.6 Linux installation. Large scene responses may overwhelm an AI client's context window. Review the [security notes](SECURITY.md) before connecting other clients.
+> **Status:** v0.5.0 development preview. Chapter and scene retrieval have been tested with a Novalist 3.6 Linux installation. Large scene responses may overwhelm an AI client's context window. Review the [security notes](SECURITY.md) before connecting other clients.
 
 Novalist AI Bridge is a community extension, not part of Novalist's official distribution.
 
@@ -16,7 +16,7 @@ Novalist AI Bridge is a community extension, not part of Novalist's official dis
 - In-Novalist token controls: Reveal, Hide, and Copy Bearer value
 - Read-only scene metadata, statistics and paginated excerpts
 - Scene-scoped Codex entries and sections filtered through Novalist’s `GetAiContextAsync`
-- No write-back capabilities yet
+- No direct-write MCP tools; proposal review requires author approval
 
 **Data scope:** The bridge currently omits inactive and export-excluded scenes. Scene reads return saved text (unsaved editor changes may not yet be visible). Large `get_scene` results may be truncated by the bridge or the AI client.
 
@@ -73,6 +73,8 @@ Avoid asking for multiple full scenes in a single tool cycle until paginated ret
 | `get_scene_excerpt` | Paginated text (max 4000 UTF-16 code units), with nextStart and contentHash |
 | `get_codex_context` | Paged AI-eligible Codex entries for a scene |
 | `get_codex_section` | Paged text from an allowed Codex section |
+| `propose_comment` | Queue an editorial comment for review (no immediate write) |
+| `propose_edit` | Queue a tracked suggestion for review (no immediate write) |
 | `search_scenes` | Search scenes for passages |
 | `sdk_diagnostics` | SDK method names for troubleshooting |
 
@@ -101,3 +103,7 @@ Read [ROADMAP.md](ROADMAP.md) for paginated scenes, Codex access, and safe edito
 ## License
 
 MIT © 2026 W.H. Scott. See [LICENSE](LICENSE).
+
+## Editorial proposal review (v0.5 development)
+
+After installing, open **World → From extensions → AI Bridge Review**. An AI client may call `propose_comment` or `propose_edit` with a scene hash from `get_scene_stats`; these tools only queue changes in memory. Review each full proposal and approve/reject inside Novalist. An approved comment becomes a Novalist scene comment. An approved edit creates a recovery snapshot then inserts Novalist tracked changes. Revisions or unsaved changes block approval. Queued proposals disappear on extension restart. **Do not use on your only copy of a manuscript until native verification completes.**
