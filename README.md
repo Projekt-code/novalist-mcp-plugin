@@ -2,7 +2,7 @@
 
 **An experimental, local MCP bridge for Novalist 3.6+**, allowing compatible AI clients—including Unsloth Studio—to discover and read the active Novalist manuscript.
 
-> **Status:** v0.3.3 pre-release. Chapter and scene retrieval have been tested with a Novalist 3.6 Linux installation. Large scene responses may overwhelm an AI client's context window. Review the [security notes](SECURITY.md) before connecting other clients.
+> **Status:** v0.4.0 development preview. Chapter and scene retrieval have been tested with a Novalist 3.6 Linux installation. Large scene responses may overwhelm an AI client's context window. Review the [security notes](SECURITY.md) before connecting other clients.
 
 Novalist AI Bridge is a community extension, not part of Novalist's official distribution.
 
@@ -14,7 +14,9 @@ Novalist AI Bridge is a community extension, not part of Novalist's official dis
 - Read and search the active manuscript
 - SDK diagnostics for troubleshooting
 - In-Novalist token controls: Reveal, Hide, and Copy Bearer value
-- No manuscript writes or Codex access yet
+- Read-only scene metadata, statistics and paginated excerpts
+- Scene-scoped Codex entries and sections filtered through Novalist’s `GetAiContextAsync`
+- No write-back capabilities yet
 
 **Data scope:** The bridge currently omits inactive and export-excluded scenes. Scene reads return saved text (unsaved editor changes may not yet be visible). Large `get_scene` results may be truncated by the bridge or the AI client.
 
@@ -65,7 +67,12 @@ Avoid asking for multiple full scenes in a single tool cycle until paginated ret
 | `book_info` | Active book and draft |
 | `list_chapters` | Ordered chapter list |
 | `list_scenes` | Active scenes in one chapter |
-| `get_scene` | Saved scene text |
+| `get_scene` | Legacy full saved scene text |
+| `get_scene_metadata` | Metadata without prose |
+| `get_scene_stats` | Character/word counts, hash and beginning/end samples |
+| `get_scene_excerpt` | Paginated text (max 4000 UTF-16 code units), with nextStart and contentHash |
+| `get_codex_context` | Paged AI-eligible Codex entries for a scene |
+| `get_codex_section` | Paged text from an allowed Codex section |
 | `search_scenes` | Search scenes for passages |
 | `sdk_diagnostics` | SDK method names for troubleshooting |
 

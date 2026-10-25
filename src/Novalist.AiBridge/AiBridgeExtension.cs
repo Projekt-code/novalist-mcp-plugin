@@ -12,7 +12,7 @@ public sealed class AiBridgeExtension : IExtension, IWebViewContributor
     public string Id => "com.whscott.novalist-ai-bridge";
     public string DisplayName => "Novalist AI Bridge";
     public string Description => "Read-only manuscript tools for local MCP clients.";
-    public string Version => "0.3.3";
+    public string Version => "0.4.0";
     public string Author => "W.H. Scott";
 
     public void Initialize(IHostServices host)
