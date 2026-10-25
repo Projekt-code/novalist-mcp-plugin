@@ -1,10 +1,10 @@
 # Roadmap
 
-## v0.4 — Retrieval
-- Paginated/excerpt scene reads with stable offsets and lengths
-- Metadata/stats endpoint that avoids returning full scene prose
-- Codex and world-building lookup via Novalist's SDK
-- Honor `GetAiContextAsync` visibility and inclusion policies for AI-bound content
+## v0.4 — Retrieval (in progress)
+- [x] Paginated/excerpt scene reads with stable offsets and content hashes
+- [x] Metadata/stats endpoint that avoids returning full scene prose
+- [x] Scene-specific AI-filtered Codex access via Novalist's SDK
+- [x] Honor `GetAiContextAsync` visibility and inclusion policies for AI-bound content
 - Configurable handling for excluded and inactive scenes, with safe defaults
 
 ## v0.5 — Editorial feedback
