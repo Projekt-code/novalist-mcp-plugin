@@ -12,8 +12,7 @@ manuscript content through the exposed tools. Localhost is not a replacement for
 user account isolation; other software running under your account may be able to
 reach localhost. Do not forward or tunnel port 8765 to other machines.
 
-**Current limitations:** No per-client capabilities, no rate limits, and no write-back
-authorization flow. Do not enable direct writes until a review/approval mechanism exists.
+**Read-only design:** MCP tools expose saved manuscript and AI-permitted Codex data, not mutations. There are no comment-proposal, approval, tracked-edit, scene-write, or Codex-write tools. Token persistence and settings are local extension configuration, not manuscript write-back.\n\n**Current limitations:** No per-client capabilities or rate limits. The read-only bridge still exposes private manuscript content to authorized local clients.
 
 **Reporting vulnerabilities:** Do not include project files or tokens in public bug reports.
 Contact maintainers privately via the repository owner's available security reporting channel.
