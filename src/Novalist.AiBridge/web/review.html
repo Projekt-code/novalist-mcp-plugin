@@ -1,23 +1,47 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AI Bridge editorial review</title>
 <style>
-body{font:15px system-ui;padding:24px;background:var(--nl-surface-card,#fff);color:var(--nl-text,#222)}
-button{margin:5px;padding:9px;cursor:pointer}
-button:disabled{opacity:.5;cursor:not-allowed}
-article{border:1px solid var(--nl-border,#999);border-radius:8px;padding:12px;margin:12px 0;white-space:pre-wrap}
-p{line-height:1.5} #status{min-height:1.6em}
-.confirm{border:2px solid currentColor;font-weight:700}
+body{margin:0;padding:24px;font:15px/1.5 system-ui;background:var(--nl-surface-card,#fff);color:var(--nl-text,#222)}
+main{max-width:900px;margin:0 auto}
+button{border-radius:6px;padding:9px 13px;cursor:pointer;border:1px solid var(--nl-border,#888);background:var(--nl-foil,#335cb6);color:var(--nl-accent-ink,#fff);font:inherit}
+button:disabled{opacity:.55;cursor:not-allowed}
+button.secondary{background:transparent;color:inherit}
+button.confirm{border:2px solid currentColor;font-weight:700}
+h1{margin:0 0 8px}
+h2{font-size:1.12rem;margin:0}
+h3{font-size:.85rem;margin:0 0 7px;color:var(--nl-text-subtle,#555)}
+p{margin:8px 0}
+#status{margin:14px 0;min-height:1.6em}
+#status.error{font-weight:600}
+article{border:1px solid var(--nl-border,#aaa);border-radius:10px;padding:16px;margin:16px 0}
+header{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.type{font-size:.8rem;font-weight:600;border:1px solid var(--nl-border,#aaa);border-radius:99px;padding:3px 9px}
+.proposal-id{font:12px/1.5 ui-monospace,monospace;overflow-wrap:anywhere;color:var(--nl-text-subtle,#555)}
+.blocks{display:grid;gap:12px}
+.blocks.edit{grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr))}
+.field{border:1px solid var(--nl-border,#aaa);border-radius:7px;padding:14px;background:var(--nl-surface-subtle,#f8f8f8)}
+.field .content{white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.field.comment{border-left:4px solid var(--nl-foil,#335cb6)}
+.field.replacement{border-left:4px solid var(--nl-foil,#335cb6)}
+.help{font-size:.9rem;color:var(--nl-text-subtle,#555)}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.confirm-panel{border:1px solid var(--nl-border,#aaa);border-radius:7px;padding:12px;margin-top:12px}
+.confirm-panel p{font-weight:600}
 </style>
 </head>
 <body>
+<main>
 <h1>AI Bridge · Editorial Review</h1>
-<p>AI clients can queue proposals but cannot approve them. You must confirm each change here. Suggested edits appear as tracked suggestions in Novalist and receive a recovery snapshot.</p>
+<p>Review the AI's exact wording before approving. A <strong>quoted passage</strong> is the existing manuscript text; it is <strong>not</strong> the AI's comment or replacement.</p>
+<p class="help">Comments add feedback without changing prose. Suggested edits add tracked changes that you can accept or reject later in Novalist. The bridge never silently accepts a suggestion.</p>
 <button id="refresh" type="button">Refresh pending proposals</button>
 <p id="status" role="status" aria-live="polite"></p>
-<section id="items"></section>
+<section id="items" aria-label="Editorial proposals"></section>
+</main>
 <script>
 (()=>{
 'use strict';
@@ -25,78 +49,138 @@ const items=document.getElementById('items');
 const status=document.getElementById('status');
 const refresh=document.getElementById('refresh');
 let busy=false;
-let awaiting=null;
+let notice='';
+let pendingConfirmation=null;
+
+const isComment=p=>p.kind==='comment';
+const addText=(parent,tag,content,className)=>{
+  const el=document.createElement(tag);
+  if(className)el.className=className;
+  el.textContent=content;
+  parent.append(el);
+  return el;
+};
+function addField(container,title,value,type){
+  const field=document.createElement('section');
+  field.className='field '+type;
+  addText(field,'h3',title);
+  addText(field,'p',value||'(No text supplied)','content');
+  container.append(field);
+}
+function showStatus(value,isError=false){
+  status.textContent=value;
+  status.classList.toggle('error',isError);
+}
 function send(action,id){
   if(busy)return;
   busy=true;
-  status.textContent=action==='list'?'Loading pending proposals…':'Sending '+action+' request to Novalist…';
+  refresh.disabled=true;
+  showStatus(action==='list'?'Loading proposals…':'Sending '+action+' request to Novalist…');
   window.parent.postMessage({novalistExt:JSON.stringify({action,id})},'*');
 }
-function resetConfirmation(button){
-  if(!button)return;
-  button.textContent='Approve in Novalist';
-  button.classList.remove('confirm');
-  button.setAttribute('aria-label','Approve proposal in Novalist');
+function render(proposals){
+  items.replaceChildren();
+  pendingConfirmation=null;
+  for(const p of proposals){
+    const comment=isComment(p);
+    const card=document.createElement('article');
+    const header=document.createElement('header');
+    const info=document.createElement('div');
+    addText(info,'h2',comment?'Editorial comment':'Suggested prose edit');
+    addText(info,'p',p.chapterTitle+' / '+p.sceneTitle,'help');
+    header.append(info);
+    addText(header,'span',comment?'Comment — no prose change':'Tracked suggestion','type');
+    card.append(header);
+
+    const blocks=document.createElement('div');
+    blocks.className=comment?'blocks':'blocks edit';
+    addField(blocks,comment?'Quoted manuscript passage (existing text)':'Original manuscript text',p.anchor||'(Whole scene)','original');
+    addField(blocks,comment?'AI editorial feedback (the comment to save)':'AI proposed replacement',p.text,comment?'comment':'replacement');
+    card.append(blocks);
+
+    addText(card,'p',comment
+      ?'Approval adds the AI feedback above as a scene comment. The quoted manuscript passage remains unchanged.'
+      :'Approval creates a tracked suggestion replacing the exact original phrase with the AI replacement. The original prose remains recoverable.','help');
+    addText(card,'p','Proposal ID: '+p.id,'proposal-id');
+
+    const controls=document.createElement('div');
+    controls.className='controls';
+    const approve=document.createElement('button');
+    approve.type='button';
+    approve.textContent=comment?'Approve comment':'Approve tracked suggestion';
+    const reject=document.createElement('button');
+    reject.type='button';
+    reject.className='secondary';
+    reject.textContent='Reject';
+    const confirmation=document.createElement('div');
+    confirmation.className='confirm-panel';
+    confirmation.hidden=true;
+
+    const instruction=document.createElement('p');
+    instruction.textContent=comment
+      ?'Confirm: add the AI editorial feedback as a comment on this passage. Manuscript prose will not change.'
+      :'Confirm: create a tracked suggestion for this replacement. A recovery snapshot will be taken before the change.';
+    const confirmButton=document.createElement('button');
+    confirmButton.type='button';
+    confirmButton.className='confirm';
+    confirmButton.textContent=comment?'Confirm: add comment':'Confirm: create tracked suggestion';
+    const cancelButton=document.createElement('button');
+    cancelButton.type='button';
+    cancelButton.className='secondary';
+    cancelButton.textContent='Cancel';
+    confirmation.append(instruction,confirmButton,cancelButton);
+
+    function closeConfirmation(){
+      confirmation.hidden=true;
+      if(pendingConfirmation===closeConfirmation)pendingConfirmation=null;
+    }
+    approve.addEventListener('click',()=>{
+      if(busy)return;
+      if(pendingConfirmation)pendingConfirmation();
+      pendingConfirmation=closeConfirmation;
+      confirmation.hidden=false;
+    });
+    cancelButton.addEventListener('click',closeConfirmation);
+    confirmButton.addEventListener('click',()=>{
+      if(busy)return;
+      closeConfirmation();
+      send('approve',p.id);
+    });
+    reject.addEventListener('click',()=>{
+      if(busy)return;
+      if(pendingConfirmation)pendingConfirmation();
+      send('reject',p.id);
+    });
+    controls.append(approve,reject);
+    card.append(controls,confirmation);
+    items.append(card);
+  }
 }
-refresh.addEventListener('click',()=>{awaiting=null;send('list')});
+refresh.addEventListener('click',()=>{
+  if(pendingConfirmation)pendingConfirmation();
+  send('list');
+});
 window.addEventListener('message',event=>{
   if(event.source!==window.parent||typeof event.data?.novalistHost!=='string')return;
   let msg;
   try{msg=JSON.parse(event.data.novalistHost)}catch{return}
   if(!msg||typeof msg.success!=='boolean')return;
   busy=false;
+  refresh.disabled=false;
   if(!msg.success){
-    status.textContent='Novalist could not apply the request: '+(msg.error||'Unknown error');
+    showStatus('Novalist could not apply the request: '+(msg.error||'Unknown error'),true);
     return;
   }
   if(msg.action!=='list'){
-    awaiting=null;
-    status.textContent=msg.action==='approve'?'Approved in Novalist.':'Proposal rejected.';
+    notice=msg.action==='approve'
+      ?'Last action: proposal approved in Novalist.'
+      :'Last action: proposal rejected.';
     send('list');
     return;
   }
-  items.replaceChildren();
-  awaiting=null;
   const proposals=msg.result?.proposals||[];
-  status.textContent=proposals.length+' pending proposal(s)';
-  for(const p of proposals){
-    const card=document.createElement('article');
-    const heading=document.createElement('h3');
-    heading.textContent=p.kind+' — '+p.chapterTitle+' / '+p.sceneTitle;
-    card.append(heading);
-    const anchor=document.createElement('p');
-    anchor.textContent='Original phrase: '+(p.anchor||'(whole scene)');
-    card.append(anchor);
-    const proposed=document.createElement('p');
-    proposed.textContent='Proposed text: '+p.text;
-    card.append(proposed);
-
-    const approve=document.createElement('button');
-    approve.type='button';
-    resetConfirmation(approve);
-    approve.addEventListener('click',()=>{
-      if(busy)return;
-      if(awaiting!==p.id){
-        resetConfirmation(items.querySelector('button.confirm'));
-        awaiting=p.id;
-        approve.textContent='Confirm approval';
-        approve.classList.add('confirm');
-        approve.setAttribute('aria-label','Confirm approval for '+p.kind);
-        status.textContent='Click Confirm approval to apply this '+p.kind+'. No change has been made yet.';
-        return;
-      }
-      awaiting=null;
-      resetConfirmation(approve);
-      send('approve',p.id);
-    });
-
-    const reject=document.createElement('button');
-    reject.type='button';
-    reject.textContent='Reject';
-    reject.addEventListener('click',()=>{awaiting=null;send('reject',p.id)});
-    card.append(approve,reject);
-    items.append(card);
-  }
+  render(proposals);
+  showStatus(proposals.length+' pending proposal(s). '+notice);
 });
 send('list');
 })();
