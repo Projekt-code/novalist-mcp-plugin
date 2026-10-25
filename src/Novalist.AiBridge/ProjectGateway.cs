@@ -5,7 +5,7 @@ using Novalist.Sdk.Services;
 namespace Novalist.AiBridge;
 
 /// <summary>Read-only access to the active book/draft. Inactive and export-excluded scenes are hidden.</summary>
-internal sealed class ProjectGateway
+internal sealed partial class ProjectGateway
 {
     private readonly IHostServices _host;
     private readonly SemaphoreSlim _serial = new(1, 1);
@@ -204,7 +204,7 @@ internal sealed class ProjectGateway
     {
         return new
         {
-            bridge = "0.3.3",
+            bridge = "0.4.0",
             project = HostReflection.SafeApiDescription(_host.ProjectService),
             archive = HostReflection.SafeApiDescription(HostReflection.Property(_host, "ArchiveService")),
             story = HostReflection.SafeApiDescription(_host.StoryService),
