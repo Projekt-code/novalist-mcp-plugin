@@ -209,8 +209,8 @@ internal sealed class McpHttpServer : IDisposable
                 {
                     protocolVersion = "2025-06-18",
                     capabilities = new { tools = new { listChanged = false } },
-                    serverInfo = new { name = "novalist-ai-bridge", version = "0.3.3" },
-                    instructions = "Read-only access to the currently open Novalist book and draft. Use list_chapters then list_scenes then get_scene. Inactive and export-excluded scenes are withheld."
+                    serverInfo = new { name = "novalist-ai-bridge", version = "0.4.0" },
+                    instructions = "Read-only access to the currently open Novalist book and draft. Prefer bounded get_scene_excerpt and get_scene_stats over large get_scene responses. Use get_codex_context for scene-filtered lore. Inactive and export-excluded scenes are withheld."
                 };
             case "ping": return new { };
             case "tools/list": return new { tools = Tools() };
@@ -229,6 +229,11 @@ internal sealed class McpHttpServer : IDisposable
                         "list_chapters" => await _project.ListChaptersAsync(),
                         "list_scenes" => await _project.ListScenesAsync(PositiveInt(args, "chapter")),
                         "get_scene" => await _project.GetSceneAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene")),
+                        "get_scene_metadata" => await _project.GetSceneMetadataAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene")),
+                        "get_scene_stats" => await _project.GetSceneStatsAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene")),
+                        "get_scene_excerpt" => await _project.GetSceneExcerptAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene"), OptionalInt(args, "start", 0), OptionalInt(args, "length", 2000), Text(args, "expectedHash")),
+                        "get_codex_context" => await _project.GetCodexContextAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene"), OptionalInt(args, "offset", 0), OptionalInt(args, "limit", 5)),
+                        "get_codex_section" => await _project.GetCodexSectionAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene"), RequiredText(args, "entryId"), RequiredNonnegativeInt(args, "sectionIndex"), OptionalInt(args, "start", 0), OptionalInt(args, "length", 2000), Text(args, "expectedHash")),
                         "search_scenes" => await _project.SearchScenesAsync(RequiredText(args, "query"), OptionalInt(args, "limit", 10)),
                         _ => throw new ArgumentException("Unknown tool: " + name)
                     };
@@ -289,6 +294,47 @@ internal sealed class McpHttpServer : IDisposable
         },
         new
         {
+            name = "get_scene_metadata",
+            description = "Get saved scene metadata without loading prose.",
+            inputSchema = new { type = "object", properties = new { chapter = new { type = "integer", minimum = 1 }, scene = new { type = "integer", minimum = 1 } }, required = new[] { "chapter", "scene" }, additionalProperties = false }
+        },
+        new
+        {
+            name = "get_scene_stats",
+            description = "Word count, character count, hash and short beginning/end scene samples.",
+            inputSchema = new { type = "object", properties = new { chapter = new { type = "integer", minimum = 1 }, scene = new { type = "integer", minimum = 1 } }, required = new[] { "chapter", "scene" }, additionalProperties = false }
+        },
+        new
+        {
+            name = "get_scene_excerpt",
+            description = "Read up to 4000 UTF-16 characters of scene text at a specified offset; continue using nextStart and contentHash.",
+            inputSchema = new { type = "object", properties = new {
+                chapter = new { type = "integer", minimum = 1 }, scene = new { type = "integer", minimum = 1 },
+                start = new { type = "integer", minimum = 0 }, length = new { type = "integer", minimum = 1, maximum = 4000 },
+                expectedHash = new { type = "string" } }, required = new[] { "chapter", "scene" }, additionalProperties = false }
+        },
+        new
+        {
+            name = "get_codex_context",
+            description = "List only Novalist-approved, AI-visible Codex context entries for a specific scene.",
+            inputSchema = new { type = "object", properties = new {
+                chapter = new { type = "integer", minimum = 1 }, scene = new { type = "integer", minimum = 1 },
+                offset = new { type = "integer", minimum = 0 }, limit = new { type = "integer", minimum = 1, maximum = 10 } },
+                required = new[] { "chapter", "scene" }, additionalProperties = false }
+        },
+        new
+        {
+            name = "get_codex_section",
+            description = "Page through an allowed AI-visible Codex section in a specific scene context.",
+            inputSchema = new { type = "object", properties = new {
+                chapter = new { type = "integer", minimum = 1 }, scene = new { type = "integer", minimum = 1 },
+                entryId = new { type = "string", minLength = 1 }, sectionIndex = new { type = "integer", minimum = 0 },
+                start = new { type = "integer", minimum = 0 }, length = new { type = "integer", minimum = 1, maximum = 4000 },
+                expectedHash = new { type = "string" } },
+                required = new[] { "chapter", "scene", "entryId", "sectionIndex" }, additionalProperties = false }
+        },
+        new
+        {
             name = "search_scenes",
             description = "Case-insensitive literal search of visible manuscript scenes; returns short cited excerpts and chapter/scene numbers.",
             inputSchema = new
@@ -310,6 +356,13 @@ internal sealed class McpHttpServer : IDisposable
         var text = Text(obj, key);
         if (string.IsNullOrWhiteSpace(text)) throw new ArgumentException("Missing " + key);
         return text;
+    }
+    private static int RequiredNonnegativeInt(JsonElement obj, string key)
+    {
+        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(key, out var v)
+            || v.ValueKind != JsonValueKind.Number || !v.TryGetInt32(out var n) || n < 0)
+            throw new ArgumentException("Expected non-negative integer for " + key);
+        return n;
     }
     private static int PositiveInt(JsonElement obj, string key)
     {
