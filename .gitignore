@@ -1,0 +1,21 @@
+# .NET
+**/bin/
+**/obj/
+dist/
+*.user
+*.suo
+TestResults/
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+# Editor
+.idea/
+.vscode/
+.DS_Store
+# Never commit local secrets or user projects
+bridge-token.txt
+*token*.secret
+*.novalist
+.novalist/

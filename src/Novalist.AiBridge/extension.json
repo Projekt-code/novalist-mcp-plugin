@@ -1,0 +1,29 @@
+{
+  "id": "com.whscott.novalist-ai-bridge",
+  "name": "Novalist AI Bridge",
+  "description": "Local MCP manuscript bridge with in-Novalist token controls",
+  "version": "0.3.3",
+  "author": "W.H. Scott",
+  "entryAssembly": "Novalist.AiBridge.dll",
+  "minHostVersion": "3.6.0",
+  "maxHostVersion": "",
+  "tags": [
+    "ai",
+    "mcp",
+    "manuscript",
+    "local"
+  ],
+  "dependencies": [],
+  "contributes": {
+    "views": [
+      {
+        "key": "com.whscott.novalist-ai-bridge.settings",
+        "title": "AI Bridge Settings",
+        "iconPath": "M4 4h16v16H4z M8 8h8v8H8z",
+        "placement": "main",
+        "mode": "world",
+        "entry": "web/settings.html"
+      }
+    ]
+  }
+}

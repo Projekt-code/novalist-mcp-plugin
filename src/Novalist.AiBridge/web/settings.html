@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Novalist AI Bridge settings</title>
+<script src="__novalist/theme.js"></script>
+<style>
+body{margin:0;padding:var(--nl-space-lg,24px);background:var(--nl-surface-card,#fff);color:var(--nl-text,#222);font-family:var(--nl-font-family,system-ui);font-size:var(--nl-font-ui,15px)}
+main{max-width:760px}h1{margin-top:0}p{line-height:1.55}.meta{color:var(--nl-text-subtle,#666);font-size:var(--nl-font-caption,13px)}
+.field{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--nl-border,#999);border-radius:var(--nl-radius-md,6px);margin:6px 0 14px;max-width:700px}
+.value{font:inherit;font-family:monospace;flex:1;min-width:0;background:transparent;color:inherit;border:none;outline-offset:4px}
+button{background:var(--nl-foil,#2563eb);color:var(--nl-accent-ink,#fff);border:0;border-radius:var(--nl-radius-md,6px);padding:10px 12px;font-size:var(--nl-font-ui,15px);margin:0 7px 7px 0;cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}
+#feedback{min-height:1.5em}.actions{margin:10px 0}
+</style>
+</head>
+<body><main>
+<h1>AI Bridge · Connection Settings</h1>
+<p>Connect Unsloth Studio or another local MCP client to the currently open Novalist project.</p>
+<label for="endpoint"><strong>MCP server URL</strong></label>
+<div class="field"><input id="endpoint" class="value" readonly value="http://127.0.0.1:8765/mcp/"></div>
+<label for="header"><strong>Authentication header name</strong></label>
+<div class="field"><input id="header" class="value" readonly value="Authorization"></div>
+<label for="bearer"><strong>Authentication header value</strong></label>
+<p class="meta">Your existing token stays unchanged. Reveal it here or copy the full value (including Bearer). No pairing codes or notifications needed.</p>
+<div class="field"><input type="password" id="bearer" class="value" readonly autocomplete="off" spellcheck="false" aria-label="Authentication bearer value" value="Bearer ••••••••••••••••••••••••••••••••"></div>
+<div class="actions">
+  <button id="reveal" type="button">Reveal token</button>
+  <button id="hide" type="button" disabled>Hide token</button>
+  <button id="copy" type="button">Copy authorization value</button>
+</div>
+<p id="feedback" role="status" class="meta" aria-live="polite"></p>
+<p class="meta">If automatic clipboard access is blocked, the full value will appear above and be selected for you to copy with Ctrl+C. It remains visible until you choose Hide token or close this view. Treat it like a password.</p>
+<p class="meta">The bridge listens on 127.0.0.1 only and never writes the token into your manuscript or Codex.</p>
+<script>
+(() => {
+  'use strict';
+  const box = document.getElementById('bearer');
+  const feedback = document.getElementById('feedback');
+  const reveal = document.getElementById('reveal');
+  const hide = document.getElementById('hide');
+  const copy = document.getElementById('copy');
+  const masked = 'Bearer ••••••••••••••••••••••••••••••••';
+  let saved = '';
+  const tell = text => { feedback.textContent = text; };
+  const send = action => {
+    try {
+      window.parent.postMessage({novalistExt:JSON.stringify({action})}, '*');
+    } catch {
+      tell('The Novalist settings channel is unavailable. Try reloading this extension view.');
+    }
+  };
+  reveal.addEventListener('click', () => { tell('Retrieving token from Novalist…');send('reveal'); });
+  copy.addEventListener('click', () => { tell('Copying the authorization value…');send('copy'); });
+  hide.addEventListener('click', () => {
+    saved = '';
+    box.type = 'password'; box.value = masked;
+    hide.disabled = true;
+    tell('Token hidden.');
+  });
+  window.addEventListener('message', async event => {
+    if (event.source !== window.parent || typeof event.data?.novalistHost !== 'string') return;
+    let msg;
+    try { msg = JSON.parse(event.data.novalistHost); } catch { return; }
+    if (!msg || typeof msg.action !== 'string') return;
+    if (msg.action === 'error') { tell(msg.message || 'Unable to read token.'); return; }
+    if (typeof msg.value !== 'string' || !msg.value.startsWith('Bearer ')) return;
+    if (msg.action === 'reveal') {
+      saved = msg.value;
+      box.type = 'text';box.value = saved;
+      hide.disabled = false;
+      tell('Token is visible in the field above. You can select and copy it at any time.');
+    } else if (msg.action === 'copy') {
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+        await navigator.clipboard.writeText(msg.value);
+        tell('Full authorization value copied. Paste it into Unsloth.');
+      } catch {
+        saved = msg.value;
+        box.type = 'text';box.value = saved;
+        hide.disabled = false;
+        box.focus();box.select();
+        tell('Clipboard access was blocked. The full value is selected above: press Ctrl+C to copy it.');
+      }
+    }
+  });
+})();
+</script>
+</main></body></html>
