@@ -1,24 +1,105 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><title>AI Bridge editorial review</title>
-<style>body{font:15px system-ui;padding:24px;background:var(--nl-surface-card,#fff);color:var(--nl-text,#222)}button{margin:5px;padding:9px}article{border:1px solid #999;border-radius:8px;padding:12px;margin:12px 0;white-space:pre-wrap}p{line-height:1.5}.muted{opacity:.75}</style>
-</head><body><h1>AI Bridge · Editorial Review</h1>
-<p>AI clients can only queue proposals. Nothing is written until you approve it here. Suggested edits are tracked in Novalist and preceded by a snapshot. Refresh after opening another project.</p>
-<button id="refresh">Refresh pending proposals</button><p id="status" role="status"></p><section id="items"></section>
-<script>(()=>{'use strict';
-const items=document.getElementById('items'),status=document.getElementById('status');
-const send=(action,id)=>window.parent.postMessage({novalistExt:JSON.stringify({action,id})},'*');
-document.getElementById('refresh').onclick=()=>send('list');
-window.addEventListener('message',ev=>{if(ev.source!==window.parent||typeof ev.data?.novalistHost!=='string')return;
-let msg;try{msg=JSON.parse(ev.data.novalistHost)}catch{return}
-if(!msg.success){status.textContent=msg.error||'Request failed';return}
-if(msg.action!=='list'){status.textContent=msg.action+' completed';send('list');return}
-items.replaceChildren();const proposals=msg.result?.proposals||[];
-status.textContent=proposals.length+' pending proposal(s)';
-for(const p of proposals){const card=document.createElement('article');
-const h=document.createElement('h3');h.textContent=p.kind+' — '+p.chapterTitle+' / '+p.sceneTitle;card.append(h);
-const a=document.createElement('p');a.textContent='Original phrase: '+(p.anchor||'(whole scene)');card.append(a);
-const t=document.createElement('p');t.textContent='Proposed text: '+p.text;card.append(t);
-for(const action of ['approve','reject']){const b=document.createElement('button');b.textContent=action==='approve'?'Approve in Novalist':'Reject';b.onclick=()=>{if(action==='approve'&&!window.confirm('Apply this '+p.kind+' to the currently open Novalist project?'))return;send(action,p.id)};card.append(b)}
-items.append(card)}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Bridge editorial review</title>
+<style>
+body{font:15px system-ui;padding:24px;background:var(--nl-surface-card,#fff);color:var(--nl-text,#222)}
+button{margin:5px;padding:9px;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+article{border:1px solid var(--nl-border,#999);border-radius:8px;padding:12px;margin:12px 0;white-space:pre-wrap}
+p{line-height:1.5} #status{min-height:1.6em}
+.confirm{border:2px solid currentColor;font-weight:700}
+</style>
+</head>
+<body>
+<h1>AI Bridge · Editorial Review</h1>
+<p>AI clients can queue proposals but cannot approve them. You must confirm each change here. Suggested edits appear as tracked suggestions in Novalist and receive a recovery snapshot.</p>
+<button id="refresh" type="button">Refresh pending proposals</button>
+<p id="status" role="status" aria-live="polite"></p>
+<section id="items"></section>
+<script>
+(()=>{
+'use strict';
+const items=document.getElementById('items');
+const status=document.getElementById('status');
+const refresh=document.getElementById('refresh');
+let busy=false;
+let awaiting=null;
+function send(action,id){
+  if(busy)return;
+  busy=true;
+  status.textContent=action==='list'?'Loading pending proposals…':'Sending '+action+' request to Novalist…';
+  window.parent.postMessage({novalistExt:JSON.stringify({action,id})},'*');
+}
+function resetConfirmation(button){
+  if(!button)return;
+  button.textContent='Approve in Novalist';
+  button.classList.remove('confirm');
+  button.setAttribute('aria-label','Approve proposal in Novalist');
+}
+refresh.addEventListener('click',()=>{awaiting=null;send('list')});
+window.addEventListener('message',event=>{
+  if(event.source!==window.parent||typeof event.data?.novalistHost!=='string')return;
+  let msg;
+  try{msg=JSON.parse(event.data.novalistHost)}catch{return}
+  if(!msg||typeof msg.success!=='boolean')return;
+  busy=false;
+  if(!msg.success){
+    status.textContent='Novalist could not apply the request: '+(msg.error||'Unknown error');
+    return;
+  }
+  if(msg.action!=='list'){
+    awaiting=null;
+    status.textContent=msg.action==='approve'?'Approved in Novalist.':'Proposal rejected.';
+    send('list');
+    return;
+  }
+  items.replaceChildren();
+  awaiting=null;
+  const proposals=msg.result?.proposals||[];
+  status.textContent=proposals.length+' pending proposal(s)';
+  for(const p of proposals){
+    const card=document.createElement('article');
+    const heading=document.createElement('h3');
+    heading.textContent=p.kind+' — '+p.chapterTitle+' / '+p.sceneTitle;
+    card.append(heading);
+    const anchor=document.createElement('p');
+    anchor.textContent='Original phrase: '+(p.anchor||'(whole scene)');
+    card.append(anchor);
+    const proposed=document.createElement('p');
+    proposed.textContent='Proposed text: '+p.text;
+    card.append(proposed);
+
+    const approve=document.createElement('button');
+    approve.type='button';
+    resetConfirmation(approve);
+    approve.addEventListener('click',()=>{
+      if(busy)return;
+      if(awaiting!==p.id){
+        resetConfirmation(items.querySelector('button.confirm'));
+        awaiting=p.id;
+        approve.textContent='Confirm approval';
+        approve.classList.add('confirm');
+        approve.setAttribute('aria-label','Confirm approval for '+p.kind);
+        status.textContent='Click Confirm approval to apply this '+p.kind+'. No change has been made yet.';
+        return;
+      }
+      awaiting=null;
+      resetConfirmation(approve);
+      send('approve',p.id);
+    });
+
+    const reject=document.createElement('button');
+    reject.type='button';
+    reject.textContent='Reject';
+    reject.addEventListener('click',()=>{awaiting=null;send('reject',p.id)});
+    card.append(approve,reject);
+    items.append(card);
+  }
 });
 send('list');
-})();</script></body></html>
+})();
+</script>
+</body>
+</html>
