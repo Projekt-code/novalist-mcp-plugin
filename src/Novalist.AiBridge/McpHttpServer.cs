@@ -45,10 +45,13 @@ internal sealed class McpHttpServer : IDisposable
         var key = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
         var options = new FileStreamOptions
         {
-            Mode = FileMode.CreateNew, Access = FileAccess.Write, Share = FileShare.None,
-            UnixCreateMode = OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()
-                ? UnixFileMode.UserRead | UnixFileMode.UserWrite : null
+            Mode = FileMode.CreateNew, Access = FileAccess.Write, Share = FileShare.None
         };
+        // Only set Unix file permissions on supported platforms.
+        // Assigning UnixCreateMode inside the cross-platform initializer
+        // triggers CA1416 even when the value is null on Windows.
+        if (!OperatingSystem.IsWindows())
+            options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
         using (var stream = new FileStream(path, options))
         using (var writer = new StreamWriter(stream, new UTF8Encoding(false))) writer.Write(key + "\n");
         return key;
