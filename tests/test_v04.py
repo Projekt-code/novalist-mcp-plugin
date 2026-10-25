@@ -6,7 +6,7 @@ SRC = Path(__file__).resolve().parents[1] / "src" / "Novalist.AiBridge"
 
 class V04ContractTests(unittest.TestCase):
     def test_version_and_tool_dispatch(self):
-        self.assertEqual(json.loads((SRC / "extension.json").read_text())["version"], "0.4.0")
+        self.assertEqual(json.loads((SRC / "extension.json").read_text())["version"], "0.5.0")
         mcp = (SRC / "McpHttpServer.cs").read_text()
         for name in ("get_scene_metadata", "get_scene_stats", "get_scene_excerpt", "get_codex_context", "get_codex_section"):
             self.assertIn('name = "' + name + '"', mcp)
