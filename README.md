@@ -2,7 +2,7 @@
 
 **An experimental, local MCP bridge for Novalist 3.6+**, allowing compatible AI clients—including Unsloth Studio—to discover and read the active Novalist manuscript.
 
-> **Status:** v0.4.0 development preview. Chapter and scene retrieval have been tested with a Novalist 3.6 Linux installation. Large scene responses may overwhelm an AI client's context window. Review the [security notes](SECURITY.md) before connecting other clients.
+> **Status:** v0.5.0 development preview. Chapter and scene retrieval have been tested with a Novalist 3.6 Linux installation. Large scene responses may overwhelm an AI client's context window. Review the [security notes](SECURITY.md) before connecting other clients.
 
 Novalist AI Bridge is a community extension, not part of Novalist's official distribution.
 
@@ -16,6 +16,8 @@ Novalist AI Bridge is a community extension, not part of Novalist's official dis
 - In-Novalist token controls: Reveal, Hide, and Copy Bearer value
 - Read-only scene metadata, statistics and paginated excerpts
 - Scene-scoped Codex entries and sections filtered through Novalist’s `GetAiContextAsync`
+- Bounded, cited manuscript mention searches and scene-scoped Codex searches
+- AI-authorized Codex entry details: descriptions, structured character traits, relationships, and available section previews
 - Deliberately **read-only**: no comment proposals, editorial approval queue, suggested edits, scene writes, or Codex writes.
 
 **Data scope:** The bridge currently omits inactive and export-excluded scenes. Scene reads return saved text (unsaved editor changes may not yet be visible). Large `get_scene` results may be truncated by the bridge or the AI client.
@@ -74,6 +76,9 @@ Prefer `get_scene_stats` and paginated `get_scene_excerpt` over multiple full-sc
 | `get_codex_context` | Paged AI-eligible Codex entries for a scene |
 | `get_codex_section` | Paged text from an allowed Codex section |
 | `search_scenes` | Search scenes for passages |
+| `find_mentions` | Paginated exact mentions across visible scenes with offsets, hashes, and evidence excerpts |
+| `search_codex_context` | Find eligible Codex entries and section matches within one scene's AI context |
+| `get_codex_entry` | Read an AI-authorized entry's paginated description, character traits, relationships, and approved section previews |
 | `sdk_diagnostics` | SDK method names for troubleshooting |
 
 ## Development

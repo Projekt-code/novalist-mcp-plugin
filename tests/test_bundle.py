@@ -12,7 +12,7 @@ class BundleTests(unittest.TestCase):
     def test_manifest_and_version(self):
         manifest = json.loads((SRC / 'extension.json').read_text())
         self.assertEqual(manifest['id'], 'com.whscott.novalist-ai-bridge')
-        self.assertEqual(manifest['version'], '0.4.0')
+        self.assertEqual(manifest['version'], '0.5.0')
         self.assertEqual(manifest['minHostVersion'], '3.6.0')
         self.assertEqual(manifest['contributes']['views'][0]['entry'], 'web/settings.html')
         self.assertEqual(manifest['contributes']['views'][0]['key'], 'com.whscott.novalist-ai-bridge.settings')
@@ -48,7 +48,7 @@ class BundleTests(unittest.TestCase):
         m=(SRC/'McpHttpServer.cs').read_text()
         for tool in ['sdk_diagnostics','book_info','list_chapters','list_scenes','get_scene','search_scenes']:
             self.assertIn('"'+tool+'"',m)
-        self.assertIn('version = "0.4.0"',m)
+        self.assertIn('version = "0.5.0"',m)
         project=(SRC/'ProjectGateway.cs').read_text()
         self.assertIn('GetChaptersOrdered()',project)
 
@@ -112,7 +112,7 @@ class BundleTests(unittest.TestCase):
             self.assertIn(method,project)
         self.assertIn('!s.Inactive && !s.ExcludeFromExport',project)
         self.assertNotIn('Could not locate a chapter-list API',project)
-        self.assertIn('bridge = "0.4.0"', project)
+        self.assertIn('bridge = "0.5.0"', project)
 
     def test_packaging(self):
         build=(ROOT/'build.sh').read_text()
