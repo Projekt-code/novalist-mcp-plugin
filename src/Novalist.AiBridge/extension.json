@@ -2,7 +2,7 @@
   "id": "com.whscott.novalist-ai-bridge",
   "name": "Novalist AI Bridge",
   "description": "Local MCP manuscript bridge with in-Novalist token controls",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "author": "W.H. Scott",
   "entryAssembly": "Novalist.AiBridge.dll",
   "minHostVersion": "3.6.0",
