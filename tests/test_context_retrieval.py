@@ -32,6 +32,20 @@ class ContextRetrievalTests(unittest.TestCase):
         self.assertIn("sectionIndex = index",source)
         self.assertIn("if (sectionHits.Count < 3)",source)
 
+    def test_codex_entry_profiles_require_ai_authorization(self):
+        mcp=(SRC/"McpHttpServer.cs").read_text()
+        self.assertIn('name = "get_codex_entry"',mcp)
+        self.assertIn('"get_codex_entry" =>',mcp)
+        body=(SRC/"ProjectGateway.CodexDetails.cs").read_text()
+        self.assertIn("AllowedContextAsync(chapterId, sceneId)",body)
+        self.assertLess(body.index("AllowedContextAsync"),body.index("GetEntityContentAsync"))
+        self.assertLess(body.index("AllowedContextAsync"),body.index("GetCharacterDetailedAsync"))
+        self.assertIn("character.Age",body)
+        self.assertIn("character.Relationships",body)
+        self.assertIn("entry.Sections.Select",body)
+        self.assertNotIn("details.Sections",body)
+        self.assertNotIn("character.Sections.Select",body)
+
     def test_still_no_writers(self):
         for name in ("ProjectGateway.Editorial.cs","ReviewWebViewController.cs","web/review.html"):
             self.assertFalse((SRC/name).exists(), name)
