@@ -234,6 +234,7 @@ internal sealed class McpHttpServer : IDisposable
                         "get_scene_excerpt" => await _project.GetSceneExcerptAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene"), OptionalInt(args, "start", 0), OptionalInt(args, "length", 2000), Text(args, "expectedHash")),
                         "get_codex_context" => await _project.GetCodexContextAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene"), OptionalInt(args, "offset", 0), OptionalInt(args, "limit", 5)),
                         "get_codex_section" => await _project.GetCodexSectionAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene"), RequiredText(args, "entryId"), RequiredNonnegativeInt(args, "sectionIndex"), OptionalInt(args, "start", 0), OptionalInt(args, "length", 2000), Text(args, "expectedHash")),
+                        "get_codex_entry" => await _project.GetCodexEntryAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene"), RequiredText(args, "entryId"), OptionalInt(args, "start", 0), OptionalInt(args, "length", 2000), Text(args, "expectedHash")),
                         "search_scenes" => await _project.SearchScenesAsync(RequiredText(args, "query"), OptionalInt(args, "limit", 10)),
                         "find_mentions" => await _project.FindMentionsAsync(RequiredText(args, "query"), OptionalInt(args, "offset", 0), OptionalInt(args, "limit", 10), OptionalInt(args, "chapterStart", 1), OptionalInt(args, "chapterEnd", 0), OptionalBool(args, "wholeWord", false)),
                         "search_codex_context" => await _project.SearchCodexContextAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene"), RequiredText(args, "query"), OptionalInt(args, "offset", 0), OptionalInt(args, "limit", 10)),
@@ -323,6 +324,17 @@ internal sealed class McpHttpServer : IDisposable
                 chapter = new { type = "integer", minimum = 1 }, scene = new { type = "integer", minimum = 1 },
                 offset = new { type = "integer", minimum = 0 }, limit = new { type = "integer", minimum = 1, maximum = 10 } },
                 required = new[] { "chapter", "scene" }, additionalProperties = false }
+        },
+        new
+        {
+            name = "get_codex_entry",
+            description = "Read structured character profile (age, appearance, relationships and custom properties), paginated description, aliases and approved section previews from an AI-eligible Codex entry for a scene. Never returns withheld sections.",
+            inputSchema = new { type = "object", properties = new {
+                chapter = new { type = "integer", minimum = 1 }, scene = new { type = "integer", minimum = 1 },
+                entryId = new { type = "string", minLength = 1 },
+                start = new { type = "integer", minimum = 0 }, length = new { type = "integer", minimum = 1, maximum = 4000 },
+                expectedHash = new { type = "string" } },
+                required = new[] { "chapter", "scene", "entryId" }, additionalProperties = false }
         },
         new
         {
