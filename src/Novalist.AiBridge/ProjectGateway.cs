@@ -204,7 +204,7 @@ internal sealed partial class ProjectGateway
     {
         return new
         {
-            bridge = "0.4.0",
+            bridge = "0.5.0",
             project = HostReflection.SafeApiDescription(_host.ProjectService),
             archive = HostReflection.SafeApiDescription(HostReflection.Property(_host, "ArchiveService")),
             story = HostReflection.SafeApiDescription(_host.StoryService),
