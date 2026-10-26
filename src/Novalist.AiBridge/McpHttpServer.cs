@@ -209,8 +209,8 @@ internal sealed class McpHttpServer : IDisposable
                 {
                     protocolVersion = "2025-06-18",
                     capabilities = new { tools = new { listChanged = false } },
-                    serverInfo = new { name = "novalist-ai-bridge", version = "0.4.0" },
-                    instructions = "Read-only access to the currently open Novalist book and draft. Prefer bounded get_scene_excerpt and get_scene_stats over large get_scene responses. Use get_codex_context for scene-filtered lore. Inactive and export-excluded scenes are withheld."
+                    serverInfo = new { name = "novalist-ai-bridge", version = "0.5.0" },
+                    instructions = "Read-only access to the currently open Novalist book and draft. Prefer bounded get_scene_excerpt and get_scene_stats over large get_scene responses. Use search_codex_context and get_codex_context for scene-filtered lore; use find_mentions to cite manuscript evidence. Inactive and export-excluded scenes are withheld."
                 };
             case "ping": return new { };
             case "tools/list": return new { tools = Tools() };
@@ -235,6 +235,8 @@ internal sealed class McpHttpServer : IDisposable
                         "get_codex_context" => await _project.GetCodexContextAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene"), OptionalInt(args, "offset", 0), OptionalInt(args, "limit", 5)),
                         "get_codex_section" => await _project.GetCodexSectionAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene"), RequiredText(args, "entryId"), RequiredNonnegativeInt(args, "sectionIndex"), OptionalInt(args, "start", 0), OptionalInt(args, "length", 2000), Text(args, "expectedHash")),
                         "search_scenes" => await _project.SearchScenesAsync(RequiredText(args, "query"), OptionalInt(args, "limit", 10)),
+                        "find_mentions" => await _project.FindMentionsAsync(RequiredText(args, "query"), OptionalInt(args, "offset", 0), OptionalInt(args, "limit", 10), OptionalInt(args, "chapterStart", 1), OptionalInt(args, "chapterEnd", 0), OptionalBool(args, "wholeWord", false)),
+                        "search_codex_context" => await _project.SearchCodexContextAsync(PositiveInt(args, "chapter"), PositiveInt(args, "scene"), RequiredText(args, "query"), OptionalInt(args, "offset", 0), OptionalInt(args, "limit", 10)),
                         _ => throw new ArgumentException("Unknown tool: " + name)
                     };
                     return ToolResult(result, false);
@@ -335,6 +337,30 @@ internal sealed class McpHttpServer : IDisposable
         },
         new
         {
+            name = "find_mentions",
+            description = "Find all literal mentions across visible saved scenes, with source chapter/scene, positions, surrounding excerpts, scene content hash and pagination; useful for continuity evidence.",
+            inputSchema = new { type = "object", properties = new {
+                query = new { type = "string", minLength = 2, maxLength = 120 },
+                offset = new { type = "integer", minimum = 0 },
+                limit = new { type = "integer", minimum = 1, maximum = 20 },
+                chapterStart = new { type = "integer", minimum = 1 },
+                chapterEnd = new { type = "integer", minimum = 0 },
+                wholeWord = new { type = "boolean" } },
+                required = new[] { "query" }, additionalProperties = false }
+        },
+        new
+        {
+            name = "search_codex_context",
+            description = "Search only AI-eligible Codex entries and sections for one scene using Novalist's inclusion and withholding policy. Returns matching names, section references and short previews.",
+            inputSchema = new { type = "object", properties = new {
+                chapter = new { type = "integer", minimum = 1 }, scene = new { type = "integer", minimum = 1 },
+                query = new { type = "string", minLength = 2, maxLength = 120 },
+                offset = new { type = "integer", minimum = 0 },
+                limit = new { type = "integer", minimum = 1, maximum = 20 } },
+                required = new[] { "chapter", "scene", "query" }, additionalProperties = false }
+        },
+        new
+        {
             name = "search_scenes",
             description = "Case-insensitive literal search of visible manuscript scenes; returns short cited excerpts and chapter/scene numbers.",
             inputSchema = new
@@ -375,6 +401,12 @@ internal sealed class McpHttpServer : IDisposable
     {
         return obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(key, out var v)
             && v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var n) ? n : fallback;
+    }
+    private static bool OptionalBool(JsonElement obj, string key, bool fallback)
+    {
+        return obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(key, out var v)
+            && (v.ValueKind == JsonValueKind.True || v.ValueKind == JsonValueKind.False)
+            ? v.GetBoolean() : fallback;
     }
     // Only the Novalist-hosted extension view's SDK message controller can request this;
     // the HTTP endpoints never expose the token.
