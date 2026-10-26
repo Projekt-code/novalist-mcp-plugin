@@ -17,6 +17,7 @@ Novalist AI Bridge is a community extension, not part of Novalist's official dis
 - Read-only scene metadata, statistics and paginated excerpts
 - Scene-scoped Codex entries and sections filtered through Novalist’s `GetAiContextAsync`
 - Bounded, cited manuscript mention searches and scene-scoped Codex searches
+- AI-authorized Codex entry details: descriptions, structured character traits, relationships, and available section previews
 - Deliberately **read-only**: no comment proposals, editorial approval queue, suggested edits, scene writes, or Codex writes.
 
 **Data scope:** The bridge currently omits inactive and export-excluded scenes. Scene reads return saved text (unsaved editor changes may not yet be visible). Large `get_scene` results may be truncated by the bridge or the AI client.
@@ -77,6 +78,7 @@ Prefer `get_scene_stats` and paginated `get_scene_excerpt` over multiple full-sc
 | `search_scenes` | Search scenes for passages |
 | `find_mentions` | Paginated exact mentions across visible scenes with offsets, hashes, and evidence excerpts |
 | `search_codex_context` | Find eligible Codex entries and section matches within one scene's AI context |
+| `get_codex_entry` | Read an AI-authorized entry's paginated description, character traits, relationships, and approved section previews |
 | `sdk_diagnostics` | SDK method names for troubleshooting |
 
 ## Development
